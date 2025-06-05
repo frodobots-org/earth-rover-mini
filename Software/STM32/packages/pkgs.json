@@ -1,0 +1,32 @@
+[
+ {
+  "path": "/packages/iot/ota_downloader", 
+  "ver": "latest", 
+  "name": "OTA_DOWNLOADER"
+ }, 
+ {
+  "path": "/packages/system/enhanced-kservice/rt_vsnprintf_full", 
+  "ver": "latest", 
+  "name": "RT_VSNPRINTF_FULL"
+ }, 
+ {
+  "path": "/packages/system/fal", 
+  "ver": "v1.0.0", 
+  "name": "FAL"
+ }, 
+ {
+  "path": "/packages/peripherals/sensors/vl53l0x", 
+  "ver": "latest", 
+  "name": "VL53L0X"
+ }, 
+ {
+  "path": "/packages/peripherals/i2c-tools", 
+  "ver": "latest", 
+  "name": "I2C_TOOLS"
+ }, 
+ {
+  "path": "/packages/signalprocess/CMSIS-DSP", 
+  "ver": "latest", 
+  "name": "CMSIS_DSP"
+ }
+]
