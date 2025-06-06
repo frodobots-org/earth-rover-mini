@@ -4,4 +4,6 @@
   <br>
 </p>
 
-# earth-rover-mini
+# EarthRover Mini+
+
+<img src="https://shop.frodobots.com/cdn/shop/files/7.png?v=1748002940&width=240">
