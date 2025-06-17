@@ -12,3 +12,7 @@
 
 # Block Diagram
 ![Image](https://github.com/user-attachments/assets/bb8ac540-4493-40bc-91dd-f2f63005b83f)
+
+# Development
+- **Host**: 🖥 [Learn more here](https://github.com/frodobots-org/earth-rover-mini/tree/dev/Software/Linux)
+- **Client**: ⚙ [Learn more here](http://example.com/stm32f407)
