@@ -11,3 +11,4 @@
 | **Battery Capacity** | 6000mAh |
 
 # Block Diagram
+![Image](https://github.com/user-attachments/assets/bb8ac540-4493-40bc-91dd-f2f63005b83f)
