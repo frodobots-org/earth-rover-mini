@@ -6,4 +6,10 @@
 
 # EarthRover Mini+
 
-<img src="https://shop.frodobots.com/cdn/shop/files/7.png?v=1748002940&width=240">
+<img src="https://shop.frodobots.com/cdn/shop/files/6s.jpg?v=1748002022&width=360"> <img src="https://shop.frodobots.com/cdn/shop/files/5_7092d924-9a71-4509-8887-c5c86b2c60f5.jpg?v=1749719753&width=360" style="display:inline-block;">
+
+# Buy the Robot
+- [Shopify](https://shop.frodobots.com/collections/earth-rovers/products/earth-rover-mini-plus)
+  
+# Getting Started
+- [Software Development](https://github.com/frodobots-org/earth-rover-mini/tree/dev/Software)
