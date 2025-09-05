@@ -170,6 +170,22 @@ int main ( void )
 
 	      switch (robot_state.status) {
               case SYSTEM_STATE_CHARGING:
+			  		// Function: set_sys_rgb_led_color_flash
+					// Input: 
+					// 		- rt_uint16_t (int) on_time
+					// 		- system_state_t (int) sys_status = code associated with robot state.
+					// Output: NULL
+
+					// Function: LED_system_init
+					// Input: 
+					// 		- 
+					// Output: NULL
+
+					// Function: rt_thread_mdelay
+					// Input: 
+					// 		- 
+					// Output: NULL
+					
 				  set_sys_rgb_led_color_flash(1000,0);// 充电中，更新电源指示灯为慢闪烁状态 = Charging, update power indicator to slow flashing
 				  break;
               case SYSTEM_STATE_CHARGED:
