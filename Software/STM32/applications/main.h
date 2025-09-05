@@ -34,20 +34,20 @@
 #define NOR_SPEED_OVERLOAD_RPM 50	//正常速度RPM = Normal speed RPM
 #define FAST_SPEED_OVERLOAD_RPM 100	//最快速度RPM = Fastest speed RPM
 
-//变加减速S型曲线参数
+//变加减速S型曲线参数 = Variable acceleration/deceleration S-curve parameters
 #define S_START 0
 #define S_END 50000
 #define S_STEP 100
 
 #define FILTER_SIZE 50
-#define V_FILTER_SIZE 20 // 滑动滤波器的窗口大小
-#define C_FILTER_SIZE 10 // 滑动滤波器的窗口大小
-#define P_FILTER_SIZE 10 // 滑动滤波器的窗口大小
-#define T_FILTER_SIZE 50 // 滑动滤波器的窗口大小(温度)
-#define FULLPWR  12.00   //  满电电压，放大100倍
-#define CUTPWR  800    //  截止电压，放大100倍
-#define LOWPWR  9.60    //  最低电压，放大100倍
-#define PERIOD 50000//周期，单位ns，频率20KHz。很关键的参数，调试好后尽量不动50000
+#define V_FILTER_SIZE 20 // 滑动滤波器的窗口大小 = Moving average filter window size
+#define C_FILTER_SIZE 10 // 滑动滤波器的窗口大小 = Moving average filter window size
+#define P_FILTER_SIZE 10 // 滑动滤波器的窗口大小 = Moving average filter window size
+#define T_FILTER_SIZE 50 // 滑动滤波器的窗口大小(温度) = Moving average filter window size (temperature)
+#define FULLPWR  12.00   //  满电电压，放大100倍 = Full battery voltage, scaled by 100
+#define CUTPWR  800    //  截止电压，放大100倍 = Cutoff voltage, scaled by 100
+#define LOWPWR  9.60    //  最低电压，放大100倍 = Minimum voltage, scaled by 100
+#define PERIOD 50000//周期，单位ns，频率20KHz。很关键的参数，调试好后尽量不动50000 = Period, in ns, frequency 20 kHz. Very critical parameter — once tuned, try not to change 50000
 
 typedef struct robot_state_t
 {

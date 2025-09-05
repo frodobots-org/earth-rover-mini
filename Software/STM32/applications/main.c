@@ -55,7 +55,7 @@ extern void robot_power_on ( void );
 extern void robot_power_off ( void );
 extern void robot_power_out_on ( void );
 extern void robot_power_out_off ( void );
-RTC_HandleTypeDef hrtc;
+RTC_HandleTypeDef hrtc; // what is this supposed to be?
 
 extern void rt_memory_info(rt_uint32_t *total, rt_uint32_t *used, rt_uint32_t *max_used);
 
@@ -134,7 +134,7 @@ int main ( void )
 //			rt_thread_startup ( protect_tid );
 //	  }
 	  wdt_init ( );
-	  hwtimer_init ( );
+	  hwtimer_init ( ); // assuming this inits the hwtimer.c functionality
 
 	  /**WS2812 Init**/
 	  ws2812_init();
@@ -143,23 +143,23 @@ int main ( void )
 	  robot_power_init ();//开关机初始化 = Power on/off initialization
 	  robot_charge_init();//充电检测初始化 = Charging detection initialization
 	  
-	  // 检测 OTA 状态
+	  // 检测 OTA 状态 = Check OTA status
 	  hrtc.Instance = RTC;
 	  HAL_RTC_Init(&hrtc);
 	  uint32_t ota_reboot=HAL_RTCEx_BKUPRead(&hrtc, RTC_BKP_DR0);
 //	  rt_kprintf("ota_flag = 0x%X\n",ota_flag);
 	  if (ota_reboot == 0xA5A5) {
-	      // OTA 后首次重启逻辑
+	      // OTA 后首次重启逻辑 = First reboot after OTA logic
 	      robot_state.pwr = 1;
 	      robot_state.status = SYSTEM_STATE_RUNNING;
 	      robot_state.net_led_status = UCP_NETWORK_CONNECTED;
 	      robot_power_on ( );
 	      robot_power_out_on ( );
 
-	      // 清除标志，防止下次复位依然触发
+	      // 清除标志，防止下次复位依然触发 = Clear the flag to prevent triggering again on next reset
 	      HAL_RTCEx_BKUPWrite(&hrtc, RTC_BKP_DR0, 0x0000);
 	  } else {
-	      // 普通启动逻辑
+	      // 普通启动逻辑 = Normal startup logic
 	      robot_state.status = SYSTEM_STATE_INITIAL;
 	  }
 
@@ -171,10 +171,10 @@ int main ( void )
 	      switch (robot_state.status) {
               case SYSTEM_STATE_CHARGING:
 				  set_sys_rgb_led_color_flash(1000,0);// 充电中，更新电源指示灯为慢闪烁状态 = Charging, update power indicator to slow flashing
-                break;
+				  break;
               case SYSTEM_STATE_CHARGED:
 				  set_sys_rgb_led_color_flash(1000,1);// 充电完毕，更新电源指示灯为常亮状态 = Charging complete, update power indicator to steady on
-                break;
+				  break;
 	          case SYSTEM_STATE_INITIAL:
 				  LED_system_init(100,0.5);// 初始状态(开机提示) = Initial state (power-on prompt)
 	              break;
@@ -190,6 +190,7 @@ int main ( void )
 	          default:
 	              break;
 	      }
+		  // main function - boot up main threads for taking care of individual parts of robot, once done, and robot_state is setup: only look at power state and take care of LED signals for power.
 
 //			clock_information();
 //			rt_kprintf("System Clock information\n");

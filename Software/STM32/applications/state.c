@@ -22,7 +22,7 @@
 #include "./WS2812/ws2812b.h"
 #include "imu.h"
 
-#define LOW_VOLTAGE_PROTECT //低压保护
+#define LOW_VOLTAGE_PROTECT //低压保护 = Low-voltage protection
 extern void vl53l0x_init_all ( );
 
 rt_adc_device_t adc_dev;
@@ -489,19 +489,19 @@ void robot_charge_init( void )
 void robot_charge_task( void )
 {
     if ( (rt_pin_read ( CHARGE_DET ) == PIN_HIGH) ||  (rt_pin_read ( CHG_INT ) == PIN_HIGH) )
-    {
-        if(robot_state.voltage >= 12.15f)
+    { // checks if robot is plugged in from the CHARGE_DET pin, if true:
+        if(robot_state.voltage >= 12.15f) // if we reach more that 121.5 Volts(?) consider fully charged
         {
             robot_state.status = SYSTEM_STATE_CHARGED;
         }
-        else {
+        else { // else, we're still charging
             robot_state.status = SYSTEM_STATE_CHARGING;
         }
         if(robot_state.pwr == 0)
-        {
+        { // charging but not powered on:
             LOG_I( "PWR OFF -1" );
             robot_power_on ( );
-            robot_power_out_off ( );//未开机状态下充电关闭头部供电
+            robot_power_out_off ( );//未开机状态下充电关闭头部供电 = When not powered on, charging disables head power supply.
         }
 
     }
