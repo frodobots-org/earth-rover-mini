@@ -76,8 +76,15 @@ int main ( void )
 //	  strategy_init ( );
 
 	// defines thread for Universal Asynchronous Receive-Transmission protocol
-	// Parameters: Thread name, thread entry function, extra parameters, stack size needed, priority level, tick (unsure what tick is)
-	// Returns: rt_thread struct. Struct has name, type, flags, and MANY more parameters.
+	// Function: rt_thread_create
+	// Input: 
+	// 		- Thread name
+	// 		- Thread Entry Function
+	//		- Extra Parameters (unsure what these parameters are for)
+	//		- Stack size needed
+	// 		- Priority Level
+	// 		- Tick (unsure what tick is)
+	// Output: rt_thread struct. Struct has name, type, flags, and MANY more parameters.
 	  uart_tid = rt_thread_create ( "uart" , uart_thread_entry , RT_NULL , 24 * 1024 , 20 , 15 ); // stack size = 24*1024, priority = 20, tick = 15
 
 	  if ( uart_tid != RT_NULL )
@@ -137,7 +144,7 @@ int main ( void )
 	  hwtimer_init ( ); // assuming this inits the hwtimer.c functionality
 
 	  /**WS2812 Init**/
-	  ws2812_init();
+	  ws2812_init(); // Initializes WS2812 driver
 	  ws2812_clearn_all(2);
 	  
 	  robot_power_init ();//开关机初始化 = Power on/off initialization
