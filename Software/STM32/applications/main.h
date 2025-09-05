@@ -21,18 +21,18 @@
 #include "./WS2812/ws2812binterface.h"
 #include "ucp.h"
 
-#define RPM_THRESHOLD_MAX   200//合理的RPM最大值
-#define RPM_THRESHOLD_MIN   -200//合理的RPM最小值
-#define KEY_LONG_PRESS_TIME 5000//开关机时间，单位ms
-#define SYS_START_UP_TIME 1500//开机后开始识别按键的时间，单位ms
+#define RPM_THRESHOLD_MAX   200//合理的RPM最大值 = Maximum reasonable RPM
+#define RPM_THRESHOLD_MIN   -200//合理的RPM最小值 = Minimum reasonable RPM
+#define KEY_LONG_PRESS_TIME 5000//开关机时间，单位ms = Power on/off press time, in ms
+#define SYS_START_UP_TIME 1500//开机后开始识别按键的时间，单位ms = Time after startup before recognizing key presses, in ms
 #define SECOND 1000
-#define PER 10//定时周期100ms
-#define RPP 11//每圈的脉冲数
-#define REDUCTION_RATIO 90//减速比
-#define LOCKED_ROTOR_TIME 8000/PER	//单位ms
-#define OVER_LOADER_TIME 16000/PER	//单位ms
-#define NOR_SPEED_OVERLOAD_RPM 50	//正常速度RPM
-#define FAST_SPEED_OVERLOAD_RPM 100	//最快速度RPM
+#define PER 10//定时周期100ms = Timer period 100 ms
+#define RPP 11//每圈的脉冲数 = Pulses per revolution
+#define REDUCTION_RATIO 90//减速比 = Gear reduction ratio
+#define LOCKED_ROTOR_TIME 8000/PER	//单位ms = Locked rotor time, in ms
+#define OVER_LOADER_TIME 16000/PER	//单位ms = Overload time, in ms
+#define NOR_SPEED_OVERLOAD_RPM 50	//正常速度RPM = Normal speed RPM
+#define FAST_SPEED_OVERLOAD_RPM 100	//最快速度RPM = Fastest speed RPM
 
 //变加减速S型曲线参数
 #define S_START 0

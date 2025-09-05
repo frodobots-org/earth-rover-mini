@@ -27,6 +27,7 @@ static rt_thread_t imu_tid = RT_NULL;
 static rt_thread_t pid_uart_tid = RT_NULL;
 static rt_thread_t motor_test_tid = RT_NULL;
 
+// Externally defined functions for thread startup
 extern void uart_thread_entry ( void *parameter );
 extern void uart_send_thread_entry ( void *parameter );
 extern void serial_thread_entry(void *parameter);
@@ -71,14 +72,17 @@ MSH_CMD_EXPORT(check_heap_size, check RT-Thread heap size);
 
 int main ( void )
 {
-	  fal_init ( );
+	  fal_init ( ); // initialized all flash devices and partitions
 //	  strategy_init ( );
 
-	  uart_tid = rt_thread_create ( "uart" , uart_thread_entry , RT_NULL , 24 * 1024 , 20 , 15 );
+	// defines thread for Universal Asynchronous Receive-Transmission protocol
+	// Parameters: Thread name, thread entry function, extra parameters, stack size needed, priority level, tick (unsure what tick is)
+	// Returns: rt_thread struct. Struct has name, type, flags, and MANY more parameters.
+	  uart_tid = rt_thread_create ( "uart" , uart_thread_entry , RT_NULL , 24 * 1024 , 20 , 15 ); // stack size = 24*1024, priority = 20, tick = 15
 
 	  if ( uart_tid != RT_NULL )
 	  {
-	      rt_thread_startup ( uart_tid );
+	      rt_thread_startup ( uart_tid ); // put thread obj to general thread startup function
 	  }
 
 	  uart_tim_tid = rt_thread_create ( "uart_tim_send" , uart_send_thread_entry , RT_NULL , 12 * 1024 , 20 , 15 );
@@ -135,9 +139,10 @@ int main ( void )
 	  /**WS2812 Init**/
 	  ws2812_init();
 	  ws2812_clearn_all(2);
-
-	  robot_power_init ();//开关机初始化
-	  robot_charge_init();//充电检测初始化
+	  
+	  robot_power_init ();//开关机初始化 = Power on/off initialization
+	  robot_charge_init();//充电检测初始化 = Charging detection initialization
+	  
 	  // 检测 OTA 状态
 	  hrtc.Instance = RTC;
 	  HAL_RTC_Init(&hrtc);
@@ -160,27 +165,27 @@ int main ( void )
 
 	  while ( 1 )
 	  {
-	     // 充电状态检测任务(优先判定)
+		  // 充电状态检测任务(优先判定) = Charging status detection task (priority determination)
 	      robot_charge_task();
 
 	      switch (robot_state.status) {
               case SYSTEM_STATE_CHARGING:
-                  set_sys_rgb_led_color_flash(1000,0);// 充电中，更新电源指示灯为慢闪烁状态
+				  set_sys_rgb_led_color_flash(1000,0);// 充电中，更新电源指示灯为慢闪烁状态 = Charging, update power indicator to slow flashing
                 break;
               case SYSTEM_STATE_CHARGED:
-                  set_sys_rgb_led_color_flash(1000,1);// 充电完毕，更新电源指示灯为常亮状态
+				  set_sys_rgb_led_color_flash(1000,1);// 充电完毕，更新电源指示灯为常亮状态 = Charging complete, update power indicator to steady on
                 break;
 	          case SYSTEM_STATE_INITIAL:
-	              LED_system_init(100,0.5);// 初始状态(开机提示)
+				  LED_system_init(100,0.5);// 初始状态(开机提示) = Initial state (power-on prompt)
 	              break;
 	          case SYSTEM_STATE_RUNNING:
-	              set_sys_rgb_led_color_flash(1000,3);// 系统开机运行中，执行正常任务
+				  set_sys_rgb_led_color_flash(1000,3);// 系统开机运行中，执行正常任务 = System running, performing normal tasks
 	              break;
 	          case SYSTEM_STATE_WARNING:
-	              set_sys_rgb_led_color_flash(300,0);// 系统电量不足10%，红灯快闪烁警告
+				  set_sys_rgb_led_color_flash(300,0);// 系统电量不足10%，红灯快闪烁警告 = System power less than 10%, red light fast flashing warning
 	              break;
 	          case SYSTEM_STATE_SHUTDOWN:
-	              rt_thread_mdelay ( 800 );// 系统关机或停止运行，进入低功耗状态
+				  rt_thread_mdelay ( 800 );// 系统关机或停止运行，进入低功耗状态 = System shutdown or stopped, enter low power state
 	              break;
 	          default:
 	              break;
