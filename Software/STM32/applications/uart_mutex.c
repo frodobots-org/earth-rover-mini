@@ -19,9 +19,9 @@
 #define DATA_SIZE 20
 #define RS485_UART_NAME "uart3"
 
-#define DATA_SEND_INTERVAL 20        // 定时发送间隔，单位：ms
+#define DATA_SEND_INTERVAL 20        // 定时发送间隔，单位：ms = Timed send interval, unit: ms
 //UART_EVENT 指令
-#define EVENT_DATA_READY 0x01        // 事件标志1，表示有数据需要发送
+#define EVENT_DATA_READY 0x01        // 事件标志1，表示有数据需要发送 = Event flag 1, indicates data needs to be sent
 #define EVENT_DATA_GET           0x02  // 事件 2
 #define EVENT_IMU_SET           0x04  // 事件 3
 #define EVENT_MAG_SET           0x08  // 事件 4
@@ -30,21 +30,21 @@
 #define EVENT_MAG_SET_DONE      0x40
 #define EVENT_DATA_GET_DONE     0x80
 
-static rt_event_t uart_event;       // 用于通知定时发送线程的事件标志
-static rt_mutex_t uart_mutex;       // 互斥锁，用于保护串口设备
+static rt_event_t uart_event;       // 用于通知定时发送线程的事件标志 // Event flag for notifying timed send thread
+static rt_mutex_t uart_mutex;       // 互斥锁，用于保护串口设备 // Mutex, used to protect serial device
 
 extern void update_driver ( );
 static struct rt_semaphore rx_sem;
 static rt_device_t serial;
 
 
-/* 环形缓冲区 */
+/* 环形缓冲区 */ // Ring buffer
 #define RING_BUFFER_LEN        1024
 
 static struct rt_ringbuffer *rb;
 static struct rt_semaphore rx_sem;
 
-/* 串口接收消息结构*/
+/* 串口接收消息结构*/ // Serial receive message structure
 struct rx_msg
 {
     rt_device_t dev;
@@ -59,18 +59,18 @@ typedef struct uart_message
 }uart_flag;
 static uart_flag ucp_flag;
 
-rt_timer_t ucp_timer;  //ACK超时定时器
-rt_timer_t ucp_data;  //数据上报定时器
+rt_timer_t ucp_timer;  //ACK超时定时器 // ACK timeout timer
+rt_timer_t ucp_data;  //数据上报定时器 // Data reporting timer
 
 void uart_data_updata_init ( void );
 void uart_timout_init ( void );
 
-// 定时器回调函数：每 20ms 设置事件标志
+// 定时器回调函数：每 20ms 设置事件标志 // Timer callback: set event flag every 20ms
 void uart_data_send_timeout(void *parameter)
 {
     if (uart_event != RT_NULL)
     {
-        rt_event_send(uart_event, EVENT_DATA_READY);  // 设置事件标志，通知定时发送线程发送数据
+    rt_event_send(uart_event, EVENT_DATA_READY);  // 设置事件标志，通知定时发送线程发送数据 // Set event flag, notify timed send thread to send data
     }
 }
 void uart_send_timout_init ( void )
@@ -78,7 +78,7 @@ void uart_send_timout_init ( void )
     ucp_data = rt_timer_create ( "ucp_data" , uart_data_send_timeout , RT_NULL , DATA_SEND_INTERVAL , RT_TIMER_FLAG_PERIODIC );
     if (ucp_data != RT_NULL)
     {
-        rt_timer_start(ucp_data);  // 启动定时器
+    rt_timer_start(ucp_data);  // 启动定时器 // Start timer
     }
 }
 
@@ -144,18 +144,18 @@ static rt_err_t uart_input ( rt_device_t dev , rt_size_t size )
 // 串口发送数据函数
 void uart_send_data(const uint8_t *data, uint16_t len)
 {
-    rt_mutex_take(uart_mutex, RT_WAITING_FOREVER);  // 获取互斥锁，确保串口独占
+    rt_mutex_take(uart_mutex, RT_WAITING_FOREVER);  // 获取互斥锁，确保串口独占 // Acquire mutex, ensure serial port exclusivity
 
-    rt_device_t uart_dev = rt_device_find(RS485_UART_NAME);  // 获取 UART 设备
+    rt_device_t uart_dev = rt_device_find(RS485_UART_NAME);  // 获取 UART 设备 // Get UART device
     if (uart_dev == RT_NULL)
     {
-        rt_mutex_release(uart_mutex);  // 释放互斥锁
+        rt_mutex_release(uart_mutex);  // 释放互斥锁 // Release mutex
         return;
     }
 
-    rt_device_write(uart_dev, 0, data, len);  // 发送数据
+    rt_device_write(uart_dev, 0, data, len);  // 发送数据 = Send data
 
-    rt_mutex_release(uart_mutex);  // 释放互斥锁
+    rt_mutex_release(uart_mutex);  // 释放互斥锁 = Release mutex
 }
 
 //information report(数据包ID:0x05)
@@ -175,7 +175,7 @@ static void uart_report_state (void)
     data [ 4 ] = hd.id;
     data [ 5 ] = index++;
 
-    // 申请state_data互斥锁(state-thread关联数据需保证数据同步性)
+    // 申请state_data互斥锁(state-thread关联数据需保证数据同步性) = Acquire state_data mutex (state-thread associated data must be synchronized)
     if(state_data_mutex != RT_NULL)
     rt_mutex_take(state_data_mutex, RT_WAITING_FOREVER);
     data [ 6 ] = robot_state.battery & 0xff;
@@ -192,11 +192,11 @@ static void uart_report_state (void)
     data [ 37 ] = (uint8_t)(robot_state.voltage * 10);
     data [ 38 ] = (uint8_t)(robot_state.current * 100) & 0xff;
     data [ 39 ] = (uint8_t)(robot_state.current * 100) >> 8;
-    // 释放互斥锁
+    // 释放互斥锁 // Release mutex
     if(state_data_mutex != RT_NULL)
     rt_mutex_release(state_data_mutex);
 
-    // 申请imu_data互斥锁(imu-thread关联数据需保证数据同步性)
+    // 申请imu_data互斥锁(imu-thread关联数据需保证数据同步性) // Acquire imu_data mutex (imu-thread associated data must be synchronized)
     if(imu_data_mutex != RT_NULL)
     rt_mutex_take(imu_data_mutex, RT_WAITING_FOREVER);
     data [ 16 ] = thread_imu_data.acc_data.acc_x & 0xff;
@@ -219,7 +219,7 @@ static void uart_report_state (void)
     data [ 33 ] = thread_imu_data.mag_data.mag_z >> 8;
     data [ 34 ] = thread_imu_data.heading & 0xff;
     data [ 35 ] = thread_imu_data.heading >> 8;
-    // 释放互斥锁
+    // 释放互斥锁 // Release mutex
     if(imu_data_mutex != RT_NULL)
     rt_mutex_release(imu_data_mutex);
 
@@ -233,7 +233,7 @@ static void uart_report_state (void)
     uart_send_data( data , sizeof(data) );
 }
 
-//陀螺仪参数校准写入(数据包ID:0x06)
+//陀螺仪参数校准写入(数据包ID:0x06) // Gyroscope parameter calibration write (packet ID: 0x06)
 static void IMU_PERS_SET(void)
 {
     ucp_hd_t hd;
@@ -266,11 +266,11 @@ static void IMU_PERS_SET(void)
 
 //    rt_device_write ( serial , 0 , data , sizeof(data) );
     uart_send_data( data , sizeof(data) );
-    LOG_W("陀螺仪数据上报->>>acc:%d,%d,%d",thread_imu_data.acc_calib_data.bias_x,thread_imu_data.acc_calib_data.bias_y,thread_imu_data.acc_calib_data.bias_z);
-    LOG_W("陀螺仪数据上报->>>gyro:%d,%d,%d",thread_imu_data.gyro_calib_data.bias_x,thread_imu_data.gyro_calib_data.bias_y,thread_imu_data.gyro_calib_data.bias_z);
+    LOG_W("陀螺仪数据上报->>>acc:%d,%d,%d",thread_imu_data.acc_calib_data.bias_x,thread_imu_data.acc_calib_data.bias_y,thread_imu_data.acc_calib_data.bias_z); // Gyroscope data report ->>>acc
+    LOG_W("陀螺仪数据上报->>>gyro:%d,%d,%d",thread_imu_data.gyro_calib_data.bias_x,thread_imu_data.gyro_calib_data.bias_y,thread_imu_data.gyro_calib_data.bias_z); // Gyroscope data report ->>>gyro
 }
 
-//磁力计参数校准写入(数据包ID:0x07)
+//磁力计参数校准写入(数据包ID:0x07) // Magnetometer parameter calibration write (packet ID: 0x07)
 static void MAG_PERS_SET(void)
 {
     ucp_hd_t hd;
@@ -298,10 +298,10 @@ static void MAG_PERS_SET(void)
 //    rt_device_write ( serial , 0 , data , sizeof(data) );
     uart_send_data( data , sizeof(data) );
     LOG_W("磁力计数据上报->>>mag:%d,%d,%d",thread_imu_data.mag_calib_data.offset_x,thread_imu_data.mag_calib_data.offset_y,
-            thread_imu_data.mag_calib_data.offset_z);
+            thread_imu_data.mag_calib_data.offset_z); // Magnetometer data report ->>>mag
 }
 
-//(陀螺仪+磁力计)参数校准获取(数据包ID:0x08)
+//(陀螺仪+磁力计)参数校准获取(数据包ID:0x08) // (Gyroscope + Magnetometer) parameter calibration get (packet ID: 0x08)
 static void IMU_PERS_GET(void)
 {
     ucp_hd_t hd;
@@ -324,7 +324,7 @@ static void IMU_PERS_GET(void)
     uart_send_data( data , sizeof(data) );
 }
 
-//回应的系统状态(数据包ID:0x01)
+//回应的系统状态(数据包ID:0x01) // Response system status (packet ID: 0x01)
 static void Keep_alive_ACK(uint8_t err)
 {
     ucp_hd_t hd;
@@ -348,7 +348,7 @@ static void Keep_alive_ACK(uint8_t err)
     uart_send_data( data , sizeof(data) );
 }
 
-//回应获取(陀螺仪/磁力计)校准开始通知的状态(数据包ID:0x03)
+//回应获取(陀螺仪/磁力计)校准开始通知的状态(数据包ID:0x03) // Response to IMU/Magnetometer calibration start notification status (packet ID: 0x03)
 static void IMU_Correct_Start_ACK(uint8_t type,uint8_t err)
 {
     ucp_hd_t hd;
@@ -373,7 +373,7 @@ static void IMU_Correct_Start_ACK(uint8_t type,uint8_t err)
     uart_send_data( data , sizeof(data) );
 }
 
-//回应获取(陀螺仪/磁力计)校准结束通知的状态(数据包ID:0x04)
+//回应获取(陀螺仪/磁力计)校准结束通知的状态(数据包ID:0x04) // Response to IMU/Magnetometer calibration end notification status (packet ID: 0x04)
 static void IMU_Correct_End_ACK(uint8_t type,uint8_t err)
 {
     ucp_hd_t hd;
@@ -398,7 +398,7 @@ static void IMU_Correct_End_ACK(uint8_t type,uint8_t err)
     uart_send_data( data , sizeof(data) );
 }
 
-//回应OTA升级的状态(数据包ID:0x09)
+//回应OTA升级的状态(数据包ID:0x09) = Response to OTA upgrade status (packet ID: 0x09)
 static void OTA_Start_ACK(uint8_t err)
 {
     ucp_hd_t hd;
