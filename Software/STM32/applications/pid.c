@@ -7,208 +7,212 @@
  * Date           Author       Notes
  * 2024-06-25     Administrator       the first version
  */
-#include "pid.h"
-#include <ulog.h>
 
-/**串口调试用**/
-int16_t PID_uart_P = 6000;//1500
-int16_t PID_uart_I = 20;//20
-int16_t PID_uart_D = 0;
-
-int16_t PID_dir_P = 35;
-int16_t PID_dir_I = 38;
-int16_t PID_dir_D = 0;
-
-int16_t PID_target = 1330 * 0.3 * 1;//限制最大rpm(pid目标值)
-int16_t PID_target_sign = 0;
-/**串口调试用**/
-
-/**速度环PID参数初始化结构体**/
-pid_struct input_pid_fr;
-pid_struct input_pid_br;
-pid_struct input_pid_fl;
-pid_struct input_pid_bl;
-
-/**位置环PID参数初始化结构体**/
-pid_struct dir_pid_control;
-
-dir_pid pid_heading_control;
-
-/**速度环最大速度限制**/
-int16_t MIX_TARGET =991; //最大限速4km/h
-/**
- * @brief  PID速度环参数初始化
- *   @note   无
- * @retval 无
- */
-void PID_param_init(pid_struct *input_pid)
-{
-    /* 初始化参数 */
-//    LOG_I("PID_init begin \n");
-    input_pid->error_k0 = 0;
-    input_pid->error_k1 = 0;
-    input_pid->integral_error = 0;
-    input_pid->limit_max = PERIOD;
-    input_pid->limit_min = -PERIOD;
-    input_pid->pid_result = 0;
-    input_pid->kd = 0;
-    input_pid->ki = 20;
-    input_pid->kp = 6000;
-//    LOG_I("PID_init end \n");
-
-}
-
-/**
- * @brief  PID位置环参数初始化(FIXME)
- *   @note   无
- * @retval 无
- */
-void PID_param_dir_init(pid_struct *input_pid)
-{
-    /* 初始化参数 */
-//    LOG_I("PID_init begin \n");
-    input_pid->error_k0 = 0;
-    input_pid->error_k1 = 0;
-    input_pid->integral_error = 0;
-    input_pid->limit_max = MIX_TARGET * 0.20;//速差最大调整幅度
-    input_pid->limit_min = -MIX_TARGET * 0.20;
-    input_pid->pid_result = 0;
-    input_pid->kd = 0;
-    input_pid->ki = 38;
-    input_pid->kp = 35;
-//    LOG_I("PID_init end \n");
-
-}
-
-/************************************************************
- *@func:获取增量式PID输出的结果(速度闭环)
- *@param:输入当前值
- *@param:输入目标值
- *@param:输入使用的PID参数
- *@return:计算结果
- *@noteֵֵ
- ************************************************************/
-double get_Inc_pid_result(double input_curvalue, double input_target, pid_struct *input_pid ,double sum_time,double base_time)
-{
-    if((sum_time / base_time) <= 0.3)
-    {
-        input_pid->kd = 15;
-        input_pid->ki = 25;
-        input_pid->kp = 2000;
-    }
-    else {
-        input_pid->kd = 0;
-        input_pid->ki = 20;
-        input_pid->kp = 6000;
-    }
-    /*-----------------------------PID计算-----------------------------*/
-    input_pid->error_k0 = ( input_target - input_curvalue ); //Error[K]
-//    input_pid->integral_error+=input_pid->error_k0;
-
-    input_pid->pid_result += (input_pid->kp / 100) * (input_pid->error_k0 - input_pid->error_k1)  //比例计算
-                                 + (input_pid->ki / 10) * input_pid->error_k0                //积分计算
-                                 + (input_pid->kd / 10) * (input_pid->error_k0 - 2*input_pid->error_k1 + input_pid->error_k2); //微分计算
-    /*---------------------------PID输出限幅---------------------------*/
-    if (input_pid->pid_result >= input_pid->limit_max)
-        input_pid->pid_result = input_pid->limit_max; //PID输出正向最大值限幅
-    else if (input_pid->pid_result <= -input_pid->limit_max)
-        input_pid->pid_result = -input_pid->limit_max; //PID输出负向最大值限幅
-    /*-----------------------------------------------------------------*/
-    input_pid->error_k2 = input_pid->error_k1; //Error[K-2]
-    input_pid->error_k1 = input_pid->error_k0; //Error[K-1]
-
-    return input_pid->pid_result;
-
-}
-/************************************************************
- *@func:获取增量式PID输出的结果(航向角闭环)
- *@param:输入当前值
- *@param:输入目标值
- *@param:输入使用的PID参数
- *@return:该函数旨在根据航向角偏差计算出左右轮速差值
- *@noteֵֵ
- ************************************************************/
-double get_heading_pid_result(double input_curvalue, double input_target, pid_struct *input_pid, OscillationLevel shock_flag)
-{
-    //判断震荡等级改变PID调整幅值
-    switch(shock_flag)
-    {
-    case NO_OSCILLATION:
-    {
-        input_pid->limit_max = MIX_TARGET * 0.20 * 1;
-        input_pid->limit_min = -MIX_TARGET * 0.20 * -1;
-    }
-        break;
-    case LIGHT_OSCILLATION:
-    {
-        input_pid->limit_max = MIX_TARGET * 0.20 * 1;
-        input_pid->limit_min = -MIX_TARGET * 0.20 * -1;
-    }
-        break;
-    case MODERATE_OSCILLATION:
-    {
-        input_pid->limit_max = MIX_TARGET * 0.20 * 1;
-        input_pid->limit_min = -MIX_TARGET * 0.20 * -1;
-    }
-        break;
-    case HEAVY_OSCILLATION:
-    {
-        input_pid->limit_max = MIX_TARGET * 0.20 * 1;//0.5
-        input_pid->limit_min = -MIX_TARGET * 0.20 * -1;//-0.5
-    }
-        break;
-    case EXTREME_OSCILLATION:
-    {
-        input_pid->limit_max = MIX_TARGET * 0.20 * 0;
-        input_pid->limit_min = -MIX_TARGET * 0.20 * 0;
-    }
-        break;
-    }
-
-    /*-----------------------------PID计算-----------------------------*/
-    input_pid->error_k0 = ( input_target - input_curvalue ); //Error[K]
-
-    /**调整角度差值到正常范围**/
-    if (input_pid->error_k0 > 180)
-        input_pid->error_k0 -= 360;
-    else if (input_pid->error_k0 < -180)
-        input_pid->error_k0 += 360;
-
-    input_pid->pid_result += (input_pid->kp ) * (input_pid->error_k0 - input_pid->error_k1)  //比例计算
-                                 + (input_pid->ki / 1000) * input_pid->error_k0                //积分计算
-                                 + (input_pid->kd / 1000) * (input_pid->error_k0 - 2*input_pid->error_k1 + input_pid->error_k2); //微分计算
-    /*---------------------------PID输出限幅---------------------------*/
-    if (input_pid->pid_result >= input_pid->limit_max)
-        input_pid->pid_result = input_pid->limit_max; //PID输出正向最大值限幅
-    else if (input_pid->pid_result <= -input_pid->limit_max)
-        input_pid->pid_result = -input_pid->limit_max; //PID输出负向最大值限幅
-    /*-----------------------------------------------------------------*/
-    input_pid->error_k2 = input_pid->error_k1; //Error[K-2]
-    input_pid->error_k1 = input_pid->error_k0; //Error[K-1]
-
-    return input_pid->pid_result;
-
-}
-
-
-float linear_acceleration(float start_velocity, float target_velocity, float duration, float time) {
-    if (time > duration) return target_velocity;
-    return start_velocity + (target_velocity - start_velocity) * (time / duration);
-}
-/**指数平滑过渡**/
-float exponential_smoothing(float current_velocity, float target_velocity, float alpha) {
-    return (1 - alpha) * current_velocity + alpha * target_velocity;
-}
-
-/**贝塞尔曲线平滑**/
-double s_curve_velocity(double v_current, double v_target, double t, double T) {
-    // 归一化时间
-    double x = t / T;
-
-    // 确保 x 在 [0, 1] 之间
-    if (x < 0) x = 0;
-    if (x > 1) x = 1;
-
-    // 计算S型速度
-    return v_current + (v_target - v_current) * (3 * x * x - 2 * x * x * x);
-}
+ #include "pid.h"
+ #include <ulog.h>
+ 
+ /** ----------------- Debug / UART adjustable PID parameters ----------------- **/
+ int16_t PID_uart_P = 6000; // Proportional gain for UART tuning
+ int16_t PID_uart_I = 20;   // Integral gain for UART tuning
+ int16_t PID_uart_D = 0;    // Derivative gain for UART tuning
+ 
+ int16_t PID_dir_P = 35;    // Direction loop P
+ int16_t PID_dir_I = 38;    // Direction loop I
+ int16_t PID_dir_D = 0;     // Direction loop D
+ 
+ int16_t PID_target = 1330 * 0.3 * 1; // Max PID target RPM
+ int16_t PID_target_sign = 0;
+ 
+ /** ----------------- PID structures ----------------- **/
+ pid_struct input_pid_fr;  // Front-right motor speed PID
+ pid_struct input_pid_br;  // Back-right motor speed PID
+ pid_struct input_pid_fl;  // Front-left motor speed PID
+ pid_struct input_pid_bl;  // Back-left motor speed PID
+ 
+ pid_struct dir_pid_control; // Position/heading PID control
+ 
+ dir_pid pid_heading_control; // Heading control struct
+ 
+ /** Maximum speed limit for speed PID loops **/
+ int16_t MIX_TARGET = 991; // roughly 4 km/h
+ 
+ /************************************************************
+  * @brief Initialize a speed-loop PID struct with default gains
+  * @param input_pid: pointer to PID structure to initialize
+  * @note Sets PID to default values for incremental PID calculation
+  ************************************************************/
+ void PID_param_init(pid_struct *input_pid)
+ {
+     input_pid->error_k0 = 0;
+     input_pid->error_k1 = 0;
+     input_pid->error_k2 = 0;
+     input_pid->integral_error = 0;
+     input_pid->limit_max = PERIOD;
+     input_pid->limit_min = -PERIOD;
+     input_pid->pid_result = 0;
+     input_pid->kd = 0;
+     input_pid->ki = 20;
+     input_pid->kp = 6000;
+ }
+ 
+ /************************************************************
+  * @brief Initialize a position/heading-loop PID struct
+  * @param input_pid: pointer to PID structure to initialize
+  * @note Sets gains for wheel speed differential / heading control
+  ************************************************************/
+ void PID_param_dir_init(pid_struct *input_pid)
+ {
+     input_pid->error_k0 = 0;
+     input_pid->error_k1 = 0;
+     input_pid->error_k2 = 0;
+     input_pid->integral_error = 0;
+     input_pid->limit_max = MIX_TARGET * 0.20; // Max wheel speed adjustment
+     input_pid->limit_min = -MIX_TARGET * 0.20;
+     input_pid->pid_result = 0;
+     input_pid->kd = 0;
+     input_pid->ki = 38;
+     input_pid->kp = 35;
+ }
+ 
+ /************************************************************
+  * @brief Incremental PID computation for speed-loop
+  * @param input_curvalue: current speed/RPM
+  * @param input_target: target speed/RPM
+  * @param input_pid: PID struct
+  * @param sum_time: accumulated control time
+  * @param base_time: base sample period
+  * @return computed incremental PID output
+  ************************************************************/
+ double get_Inc_pid_result(double input_curvalue, double input_target, pid_struct *input_pid, double sum_time, double base_time)
+ {
+     // Adjust PID gains for initial period for smoother startup
+     if ((sum_time / base_time) <= 0.3)
+     {
+         input_pid->kd = 15;
+         input_pid->ki = 25;
+         input_pid->kp = 2000;
+     }
+     else
+     {
+         input_pid->kd = 0;
+         input_pid->ki = 20;
+         input_pid->kp = 6000;
+     }
+ 
+     // Compute incremental PID
+     input_pid->error_k0 = (input_target - input_curvalue); // Current error
+ 
+     input_pid->pid_result += (input_pid->kp / 100) * (input_pid->error_k0 - input_pid->error_k1)  // Proportional
+                           + (input_pid->ki / 10) * input_pid->error_k0                             // Integral
+                           + (input_pid->kd / 10) * (input_pid->error_k0 - 2*input_pid->error_k1 + input_pid->error_k2); // Derivative
+ 
+     // Limit PID output
+     if (input_pid->pid_result >= input_pid->limit_max)
+         input_pid->pid_result = input_pid->limit_max;
+     else if (input_pid->pid_result <= -input_pid->limit_max)
+         input_pid->pid_result = -input_pid->limit_max;
+ 
+     // Shift error history
+     input_pid->error_k2 = input_pid->error_k1;
+     input_pid->error_k1 = input_pid->error_k0;
+ 
+     return input_pid->pid_result;
+ }
+ 
+ /************************************************************
+  * @brief Incremental PID computation for heading control (wheel differential)
+  * @param input_curvalue: current heading angle
+  * @param input_target: target heading angle
+  * @param input_pid: PID struct
+  * @param shock_flag: oscillation level
+  * @return PID output for wheel differential
+  ************************************************************/
+ double get_heading_pid_result(double input_curvalue, double input_target, pid_struct *input_pid, OscillationLevel shock_flag)
+ {
+     // Adjust PID limits based on oscillation severity
+     switch (shock_flag)
+     {
+         case NO_OSCILLATION:
+         case LIGHT_OSCILLATION:
+         case MODERATE_OSCILLATION:
+         case HEAVY_OSCILLATION:
+             input_pid->limit_max = MIX_TARGET * 0.20;
+             input_pid->limit_min = -MIX_TARGET * 0.20;
+             break;
+         case EXTREME_OSCILLATION:
+             input_pid->limit_max = 0;
+             input_pid->limit_min = 0;
+             break;
+     }
+ 
+     // Compute PID error
+     input_pid->error_k0 = input_target - input_curvalue;
+ 
+     // Wrap heading error into [-180, 180]
+     if (input_pid->error_k0 > 180)
+         input_pid->error_k0 -= 360;
+     else if (input_pid->error_k0 < -180)
+         input_pid->error_k0 += 360;
+ 
+     // Incremental PID computation
+     input_pid->pid_result += (input_pid->kp) * (input_pid->error_k0 - input_pid->error_k1)
+                            + (input_pid->ki / 1000) * input_pid->error_k0
+                            + (input_pid->kd / 1000) * (input_pid->error_k0 - 2*input_pid->error_k1 + input_pid->error_k2);
+ 
+     // Limit output
+     if (input_pid->pid_result >= input_pid->limit_max)
+         input_pid->pid_result = input_pid->limit_max;
+     else if (input_pid->pid_result <= -input_pid->limit_max)
+         input_pid->pid_result = -input_pid->limit_max;
+ 
+     // Shift error history
+     input_pid->error_k2 = input_pid->error_k1;
+     input_pid->error_k1 = input_pid->error_k0;
+ 
+     return input_pid->pid_result;
+ }
+ 
+ /************************************************************
+  * @brief Compute linear acceleration from start to target velocity
+  * @param start_velocity: initial velocity
+  * @param target_velocity: desired velocity
+  * @param duration: total acceleration duration
+  * @param time: elapsed time
+  * @return linearly interpolated velocity
+  ************************************************************/
+ float linear_acceleration(float start_velocity, float target_velocity, float duration, float time)
+ {
+     if (time > duration) return target_velocity;
+     return start_velocity + (target_velocity - start_velocity) * (time / duration);
+ }
+ 
+ /************************************************************
+  * @brief Exponential smoothing for velocity control
+  * @param current_velocity: current velocity
+  * @param target_velocity: desired velocity
+  * @param alpha: smoothing factor (0..1)
+  * @return smoothed velocity
+  ************************************************************/
+ float exponential_smoothing(float current_velocity, float target_velocity, float alpha)
+ {
+     return (1 - alpha) * current_velocity + alpha * target_velocity;
+ }
+ 
+ /************************************************************
+  * @brief S-curve (Bezier) velocity smoothing
+  * @param v_current: current velocity
+  * @param v_target: target velocity
+  * @param t: elapsed time
+  * @param T: total duration
+  * @return smoothed velocity along S-curve
+  ************************************************************/
+ double s_curve_velocity(double v_current, double v_target, double t, double T)
+ {
+     double x = t / T;   // normalize time
+     if (x < 0) x = 0;
+     if (x > 1) x = 1;
+ 
+     // cubic Bezier curve smoothing: 3x^2 - 2x^3
+     return v_current + (v_target - v_current) * (3 * x * x - 2 * x * x * x);
+ }
+ 
