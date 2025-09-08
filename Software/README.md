@@ -119,5 +119,5 @@ External communication uses a **custom UART protocol (UCP)**.
 
 
 # Development
-- **Host**: 🖥 [Learn more here](./Software/Linux)
+- **Host**: 🖥 [Learn more here](../Linux)
 - **Client**: ⚙ [Learn more here](http://example.com/stm32f407)
