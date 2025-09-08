@@ -22,15 +22,15 @@
 #include "./WS2812/ws2812b.h"
 #include "imu.h"
 
-#define LOW_VOLTAGE_PROTECT //低压保护
+#define LOW_VOLTAGE_PROTECT //低压保护 = Low-voltage protection
 extern void vl53l0x_init_all ( );
 
 rt_adc_device_t adc_dev;
-#define ADC_DEV_NAME "adc1" /* ADC 设 备 名 称 */
-#define ADC_DEV_MOTOR_RIGHT_CURRENT 3 /* ADC 通 道 */
-#define ADC_DEV_MOTOR_LEFT_CURRENT 4 /* ADC 通 道 */
-#define REFER_VOLTAGE 330 /* 参 考 电 压 3.3V,数 据 精 度 乘 以100保 留2位 小 数 */
-#define CONVERT_BITS (1 << 12) /* 转 换 位 数 为12位 */
+#define ADC_DEV_NAME "adc1" /* ADC 设 备 名 称 = ADC device name */
+#define ADC_DEV_MOTOR_RIGHT_CURRENT 3 /* ADC 通 道 = ADC channel*/
+#define ADC_DEV_MOTOR_LEFT_CURRENT 4 /* ADC 通 道  = ADC channel*/
+#define REFER_VOLTAGE 330 /* 参 考 电 压 3.3V,数 据 精 度 乘 以100保 留2位 小 数 = Reference voltage 3.3V, data precision multiplied by 100 to keep 2 decimal places */
+#define CONVERT_BITS (1 << 12) /* 转 换 位 数 为12位 = Conversion resolution is 12 bits */
 rt_mutex_t state_data_mutex;
 
 rt_timer_t key_timer;
@@ -379,7 +379,7 @@ void key_isr ( void *args )  //要注意开机的时候是没办法检测到按�
 }
 #endif
 
-/* 按键检测任务 */
+/* 按键检测任务 = Button detection task*/
 #ifndef SW_MODE
 void key_detect_task ( void )
 {
@@ -389,24 +389,24 @@ void key_detect_task ( void )
     {
         rt_tick_t duration = key_press_stop_time - key_press_start_time;
 
-        if ( key_press_stop_time < key_press_start_time )  //按键还未松开
+        if ( key_press_stop_time < key_press_start_time )  //按键还未松开 = Button is still pressed
         {
             return;
         }
-        //达到开关机时间
+        //达到开关机时间 = Reached power on/off time
         if ( duration > 0 )
         {
-            if ( robot_state.pwr == 0 && duration >= timer_time )  //开机时因无法识别边沿，故只能查询，需减去系统启动到查询的时间
+            if ( robot_state.pwr == 0 && duration >= timer_time )  //开机时因无法识别边沿，故只能查询，需减去系统启动到查询的时间 = At startup, because edges cannot be detected, polling must be used instead, and the system startup-to-polling time needs to be subtracted.
             {
 #ifdef LOW_VOLTAGE_PROTECT
-                //低压保护
+                //低压保护 = Low-voltage protection
                 if(robot_state.voltage <= 9.30f)
                 {
                     duration = 0;
                     key_press_stop_time = 0;
                     robot_state.pwr = 0;
                     robot_state.status = SYSTEM_STATE_SHUTDOWN;
-                    ws2812_clearn_all(2);//关机前关闭系统状态灯
+                    ws2812_clearn_all(2);//关机前关闭系统状态灯 = Turn off the system status LED before shutdown.
                     robot_power_off ( );
                     robot_power_out_off ( );
                     return;
@@ -426,20 +426,20 @@ void key_detect_task ( void )
                 key_press_stop_time = 0;
                 robot_state.pwr = 0;
                 robot_state.status = SYSTEM_STATE_SHUTDOWN;
-                ws2812_clearn_all(2);//关机前关闭系统状态灯
+                ws2812_clearn_all(2);//关机前关闭系统状态灯 = Turn off the system status LED before shutting down.
                 robot_power_off ( );
                 robot_power_out_off ( );
                 LOG_I( "PWR OFF" );
             }
         }
     }
-    else  //主要是考虑开机时没有办法识别按键的边沿,以及开机后插入
+    else  //主要是考虑开机时没有办法识别按键的边沿,以及开机后插入 = Mainly to account for the fact that during startup the button’s edge cannot be detected, as well as button insertion after power-on.
     {
-        if ( key_pressed != RT_TRUE ) //开机时一瞬间无法进入按键中断，从这里进
+        if ( key_pressed != RT_TRUE ) //开机时一瞬间无法进入按键中断，从这里进 = At the moment of power-on, the system cannot enter the button interrupt, so it enters from here instead.
         {
             if ( rt_pin_read ( PWR_DEC ) == PIN_LOW )
             {
-                if ( robot_state.pwr == 0 )  //如果是开机，则修改定时器时间
+                if ( robot_state.pwr == 0 )  //如果是开机，则修改定时器时间 = If it is a power-on, then modify the timer time.
                 {
                     key_pressed = RT_TRUE;
                     key_press_start_time = rt_tick_get_millisecond ( );
@@ -489,19 +489,19 @@ void robot_charge_init( void )
 void robot_charge_task( void )
 {
     if ( (rt_pin_read ( CHARGE_DET ) == PIN_HIGH) ||  (rt_pin_read ( CHG_INT ) == PIN_HIGH) )
-    {
-        if(robot_state.voltage >= 12.15f)
+    { // checks if robot is plugged in from the CHARGE_DET pin, if true:
+        if(robot_state.voltage >= 12.15f) // if we reach more that 121.5 Volts(?) consider fully charged
         {
             robot_state.status = SYSTEM_STATE_CHARGED;
         }
-        else {
+        else { // else, we're still charging
             robot_state.status = SYSTEM_STATE_CHARGING;
         }
         if(robot_state.pwr == 0)
-        {
+        { // charging but not powered on:
             LOG_I( "PWR OFF -1" );
             robot_power_on ( );
-            robot_power_out_off ( );//未开机状态下充电关闭头部供电
+            robot_power_out_off ( );//未开机状态下充电关闭头部供电 = When not powered on, charging disables head power supply.
         }
 
     }
@@ -567,10 +567,10 @@ void robot_power_init ( void )
     rt_pin_attach_irq ( PWR_DEC , PIN_IRQ_MODE_RISING_FALLING , key_isr , RT_NULL );
     rt_pin_irq_enable ( PWR_DEC , PIN_IRQ_ENABLE );
 
-    //给一个默认电平
-    rt_pin_write ( PWR_ON , PIN_HIGH );//默认开机
+    //给一个默认电平 = Give a default logic level
+    rt_pin_write ( PWR_ON , PIN_HIGH );//默认开机 = Default power-on
     rt_pin_write ( PWR_CLK , PIN_LOW );
-    rt_pin_write ( PWR_OUT_ON , PIN_LOW );//默认低（打开）
+    rt_pin_write ( PWR_OUT_ON , PIN_LOW );//默认低（打开）= Default low (means ON/open)
 }
 
 void robot_lamp_init ( void )
@@ -759,10 +759,16 @@ void state_thread_entry ( void *parameter )
         if ( robot_state.lamp && robot_state.lamp != 0xff && robot_state.pwr == 1 )  //在开机上总电的时候才给开灯
         {
             robot_lamp_on ( );
+            // Function: robot_lamp_on
+            // Input: NULL
+            // Output: Turns on Lamp in front of robot
         }
         else
         {
             robot_lamp_off ( );
+            // Function: robot_lamp_off
+            // Input: NULL
+            // Output: Turns off Lamp in front of robot
         }
 
         key_detect_task ( );

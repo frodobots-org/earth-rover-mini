@@ -1,0 +1,14 @@
+[
+{
+  "directory": "C:/Users/Hasan/OneDrive/Desktop/earth-rover-mini-OpenSource/build",
+  "command": "C:/msys64/ucrt64/bin/g++.exe   -g -o CMakeFiles/move.dir/src/move.cpp.obj -c C:/Users/Hasan/OneDrive/Desktop/earth-rover-mini-OpenSource/Software/Linux/src/move.cpp",
+  "file": "C:/Users/Hasan/OneDrive/Desktop/earth-rover-mini-OpenSource/Software/Linux/src/move.cpp",
+  "output": "CMakeFiles/move.dir/src/move.cpp.obj"
+},
+{
+  "directory": "C:/Users/Hasan/OneDrive/Desktop/earth-rover-mini-OpenSource/build",
+  "command": "C:/msys64/ucrt64/bin/g++.exe   -g -o CMakeFiles/hello.dir/src/hello.cpp.obj -c C:/Users/Hasan/OneDrive/Desktop/earth-rover-mini-OpenSource/Software/Linux/src/hello.cpp",
+  "file": "C:/Users/Hasan/OneDrive/Desktop/earth-rover-mini-OpenSource/Software/Linux/src/hello.cpp",
+  "output": "CMakeFiles/hello.dir/src/hello.cpp.obj"
+}
+]

@@ -20,96 +20,102 @@
 #include "./WS2812/ws2812b.h"
 #include "./WS2812/ws2812binterface.h"
 #include "ucp.h"
-
-#define RPM_THRESHOLD_MAX   200//合理的RPM最大值
-#define RPM_THRESHOLD_MIN   -200//合理的RPM最小值
-#define KEY_LONG_PRESS_TIME 5000//开关机时间，单位ms
-#define SYS_START_UP_TIME 1500//开机后开始识别按键的时间，单位ms
+//  PID = Proportional Integral Derivative
+#define RPM_THRESHOLD_MAX   200//合理的RPM最大值 = Maximum reasonable RPM
+#define RPM_THRESHOLD_MIN   -200//合理的RPM最小值 = Minimum reasonable RPM
+#define KEY_LONG_PRESS_TIME 5000//开关机时间，单位ms = Power on/off press time, in ms
+#define SYS_START_UP_TIME 1500//开机后开始识别按键的时间，单位ms = Time after startup before recognizing key presses, in ms
 #define SECOND 1000
-#define PER 10//定时周期100ms
-#define RPP 11//每圈的脉冲数
-#define REDUCTION_RATIO 90//减速比
-#define LOCKED_ROTOR_TIME 8000/PER	//单位ms
-#define OVER_LOADER_TIME 16000/PER	//单位ms
-#define NOR_SPEED_OVERLOAD_RPM 50	//正常速度RPM
-#define FAST_SPEED_OVERLOAD_RPM 100	//最快速度RPM
+#define PER 10//定时周期100ms = Timer period 100 ms
+#define RPP 11//每圈的脉冲数 = Pulses per revolution
+#define REDUCTION_RATIO 90//减速比 = Gear reduction ratio
+#define LOCKED_ROTOR_TIME 8000/PER	//单位ms = Locked rotor time, in ms
+#define OVER_LOADER_TIME 16000/PER	//单位ms = Overload time, in ms
+#define NOR_SPEED_OVERLOAD_RPM 50	//正常速度RPM = Normal speed RPM
+#define FAST_SPEED_OVERLOAD_RPM 100	//最快速度RPM = Fastest speed RPM
 
-//变加减速S型曲线参数
+//变加减速S型曲线参数 = Variable acceleration/deceleration S-curve parameters
 #define S_START 0
 #define S_END 50000
 #define S_STEP 100
 
 #define FILTER_SIZE 50
-#define V_FILTER_SIZE 20 // 滑动滤波器的窗口大小
-#define C_FILTER_SIZE 10 // 滑动滤波器的窗口大小
-#define P_FILTER_SIZE 10 // 滑动滤波器的窗口大小
-#define T_FILTER_SIZE 50 // 滑动滤波器的窗口大小(温度)
-#define FULLPWR  12.00   //  满电电压，放大100倍
-#define CUTPWR  800    //  截止电压，放大100倍
-#define LOWPWR  9.60    //  最低电压，放大100倍
-#define PERIOD 50000//周期，单位ns，频率20KHz。很关键的参数，调试好后尽量不动50000
+#define V_FILTER_SIZE 20 // 滑动滤波器的窗口大小 = Moving average filter window size
+#define C_FILTER_SIZE 10 // 滑动滤波器的窗口大小 = Moving average filter window size
+#define P_FILTER_SIZE 10 // 滑动滤波器的窗口大小 = Moving average filter window size
+#define T_FILTER_SIZE 50 // 滑动滤波器的窗口大小(温度) = Moving average filter window size (temperature)
+#define FULLPWR  12.00   //  满电电压，放大100倍 = Full battery voltage, scaled by 100
+#define CUTPWR  800    //  截止电压，放大100倍 = Cutoff voltage, scaled by 100
+#define LOWPWR  9.60    //  最低电压，放大100倍 = Minimum voltage, scaled by 100
+#define PERIOD 50000//周期，单位ns，频率20KHz。很关键的参数，调试好后尽量不动50000 = Period, in ns, frequency 20 kHz. Very critical parameter — once tuned, try not to change 50000
 
 typedef struct robot_state_t
 {
 			int16_t rpm [ 4 ];
-			uint16_t battery;   //建议有无效值
-			float voltage;  //电压V，放大100倍
-			float current;  //电流A，放大100倍
-			float power;    //功率W
-			uint32_t over_loader_num;  //过载次数
-			uint32_t locked_rotor_num;  //堵转次数
-			uint32_t rs485_crcerr_num;  //RS485丢包次数
+			uint16_t battery;   //建议有无效值 = Suggest having an invalid value (for error checking)
+			float voltage;  //电压V，放大100倍 = Voltage (V), scaled by 100
+			float current;  //电流A，放大100倍 = Current (A), scaled by 100
+			float power;    //功率W = Power (W)
+			uint32_t over_loader_num;  //过载次数 = Number of overload events
+			uint32_t locked_rotor_num;  //堵转次数 = Number of locked rotor events
+			uint32_t rs485_crcerr_num;  //RS485丢包次数 = Number of RS485 packet loss (CRC errors)
 			uint8_t lamp;
 			uint8_t tof;
 			int16_t speed;
 			int16_t steer;
 			uint8_t key;
-			uint8_t pwr;    //外设电路供电开关
-			uint8_t break_mode;  //刹车模式
+			uint8_t pwr;    //外设电路供电开关 = Peripheral circuit power switch
+			uint8_t break_mode;  //刹车模式 = Brake mode
 			uint8_t break_status;
-			system_state_t status;  //MCU系统状态 0：充电中  1：充电完毕  2：系统初始状态 3：系统运行状态 4：系统关机状态
-			ucp_state_e net_led_status; //头部联网状态示灯
+			system_state_t status;  //MCU系统状态 0：充电中  1：充电完毕  2：系统初始状态 3：系统运行状态 4：系统关机状态 = 
+                                //MCU system state: 
+                                // 0: charging
+                                // 1: charging complete
+                                // 2: system initial state
+                                // 3: system running state
+                                // 4: system shutdown state
+			ucp_state_e net_led_status; //头部联网状态示灯 = Head network status indicator LED
 
 } robot_state_t;
 typedef struct
 {
-      float buffer [ FILTER_SIZE ];  // 存储样本的缓冲区
-      rt_int32_t index;                  // 当前样本在缓冲区中的索引
-      rt_int32_t count;                  // 缓冲区中当前存储的样本数量
-      float sum;                // 缓冲区中样本的总和，用于快速计算平均值
+      float buffer [ FILTER_SIZE ];  // 存储样本的缓冲区 = Buffer to store samples
+      rt_int32_t index;                  // 当前样本在缓冲区中的索引 = Current sample index in the buffer
+      rt_int32_t count;                  // 缓冲区中当前存储的样本数量 = Current number of samples stored in the buffer
+      float sum;                // 缓冲区中样本的总和，用于快速计算平均值 = Sum of samples in the buffer (for fast average calculation)
 } SlidingFilter;
-//宏定义系统RGB状态灯的引脚
+//宏定义系统RGB状态灯的引脚 = Macro definition of system RGB status LED pins
 #define LED_SYS_R_PIN GET_PIN(C, 4)
 #define LED_SYS_G_PIN GET_PIN(A, 7)
 #define LED_SYS_B_PIN GET_PIN(C, 5)
 
-//电机PID驱动(打开宏PID_OFF关闭PID)
+//电机PID驱动(打开宏PID_OFF关闭PID) = Motor PID drive (define PID_OFF macro to disable PID)
 //#define PID_OFF
-//定义4路电机引脚
+//定义4路电机引脚 = Define 4 motor control pins
 #define PWM_DEV_NAME1 "pwm1"
 #define PWM_DEV_NAME9 "pwm9"
 #define PWM_DEV_NAME10 "pwm10"
 #define PWM_DEV_NAME11 "pwm11"
-#define MOTOR_LF_IN 4	//左后电机的PWM引脚位TIM1的CH4
-#define MOTOR_LB_IN 2	//左后电机的PWM引脚位TIM1的CH2
-#define MOTOR_RF_IN 1	//左后电机的PWM引脚位TIM9的CH1
-#define MOTOR_RB_IN 1	//左后电机的PWM引脚位TIM11的CH1
+#define MOTOR_LF_IN 4	//左后电机的PWM引脚位TIM1的CH4 = Left-rear motor PWM pin at TIM1 Channel 4
+#define MOTOR_LB_IN 2	//左后电机的PWM引脚位TIM1的CH2 = Left-rear motor PWM pin at TIM1 Channel 2
+#define MOTOR_RF_IN 1	//左后电机的PWM引脚位TIM9的CH1 = Right-front motor PWM pin at TIM9 Channel 1
+#define MOTOR_RB_IN 1	//左后电机的PWM引脚位TIM11的CH1 = Right-rear motor PWM pin at TIM11 Channel 1
 
-#define MOTOR_L_IN 4    //左电机的PWM引脚位TIM1的CH4
-#define MOTOR_R_IN 2    //右电机的PWM引脚位TIM1的CH2
+#define MOTOR_L_IN 4    //左电机的PWM引脚位TIM1的CH4 = Left motor PWM pin at TIM1 Channel 4
+#define MOTOR_R_IN 2    //右电机的PWM引脚位TIM1的CH2 = Right motor PWM pin at TIM1 Channel 2
 
-#define MOTOR_LF_BREAK 3//左前刹车TIM1_CH3
-#define MOTOR_LB_BREAK 1//左前刹车TIM1_CH1
-#define MOTOR_RF_BREAK 2//左前刹车TIM9_CH2
-#define MOTOR_RB_BREAK 1//左前刹车TIM10_CH1
+#define MOTOR_LF_BREAK 3//左前刹车TIM1_CH3 = Left-front brake at TIM1 Channel 3
+#define MOTOR_LB_BREAK 1//左前刹车TIM1_CH1 = 
+#define MOTOR_RF_BREAK 2//左前刹车TIM9_CH2 = 
+#define MOTOR_RB_BREAK 1//左前刹车TIM10_CH1 = 
 
-#define MOTOR_DIR_LF GET_PIN(A, 0)	//左前D
-#define MOTOR_DIR_LB GET_PIN(D, 12)	//左后C
-#define MOTOR_DIR_RF GET_PIN(B, 4)	//右前B
-#define MOTOR_DIR_RB GET_PIN(A, 15)	//右后A
+#define MOTOR_DIR_LF GET_PIN(A, 0)	//左前D = Left-front motor direction pin (Port A, Pin 0)
+#define MOTOR_DIR_LB GET_PIN(D, 12)	//左后C = Left-back motor direction pin (Port D, Pin 12)
+#define MOTOR_DIR_RF GET_PIN(B, 4)	//右前B = Right-front motor direction pin (Port B, Pin 4)
+#define MOTOR_DIR_RB GET_PIN(A, 15)	//右后A = Right-back motor direction pin (Port A, Pin 15)
 
-#define MOTOR_DIR_L GET_PIN(A, 0)  //左轮方向引脚
-#define MOTOR_DIR_R GET_PIN(D, 12) //右轮方向引脚
+#define MOTOR_DIR_L GET_PIN(A, 0)  //左轮方向引脚 = Left wheel direction pin
+#define MOTOR_DIR_R GET_PIN(D, 12) //右轮方向引脚 = Right wheel direction pin
 
 #define MOTOR_PWM_R GET_PIN(E, 11)
 #define MOTOR_PWM_L GET_PIN(E, 14)
@@ -284,9 +290,9 @@ typedef struct ctl_cmd {
     uint16_t     reserve1;
     uint32_t     reserve2;
     uint16_t     checksum;
-}__attribute__((packed)) ctl_cmd_t;
+}__attribute__((packed)) ctl_cmd_t; // __attribute__((packed)) = packed with no spaces in between vars
 
-typedef struct ctl {
+typedef struct ctl { //control frame for messaging
     uint16_t     header;
     uint8_t      id;
     uint16_t     len;
@@ -299,10 +305,10 @@ typedef struct ctl {
     uint16_t     reserve1;
     uint32_t     reserve2;
     uint16_t     checksum;
-}ctl_t;
+}ctl_t; // control frame type
 
 /**
- * 全局变量声明
+ * 全局变量声明 = Global variable declarations
  */
 extern volatile robot_state_t robot_state;
 extern int16_t PID_target;
