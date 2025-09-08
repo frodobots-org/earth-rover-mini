@@ -9,7 +9,7 @@
  */
 
 /*
- * Program Listing: This is a sample program demonstrating the use of the hwtimer device.
+ * This is a sample program demonstrating the use of the hwtimer device.
  * The example exports the `hwtimer_sample` command to the system shell (console).
  * Command usage format: hwtimer_sample
  * Program functionality: The hardware timer timeout callback function periodically prints
