@@ -12,4 +12,4 @@
 - [Shopify](https://shop.frodobots.com/collections/earth-rovers/products/earth-rover-mini-plus)
   
 # Getting Started
-- [Software Development](https://github.com/frodobots-org/earth-rover-mini/tree/dev/Software)
+- [Software Development](/Software)
