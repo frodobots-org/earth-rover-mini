@@ -16,4 +16,4 @@
 Core Development is done in two sections under Software
 - [Software Development](/Software)
 - [Host User Development](/Software/linux)
-- [Client Side(EarthRover Mini) Development](/Software/STM32/Applications)
+- [Client Side(EarthRover Mini) Development](/Software/STM32/applications)
