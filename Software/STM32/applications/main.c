@@ -55,7 +55,7 @@ extern void robot_power_on ( void );
 extern void robot_power_off ( void );
 extern void robot_power_out_on ( void );
 extern void robot_power_out_off ( void );
-RTC_HandleTypeDef hrtc; // what is this supposed to be?
+RTC_HandleTypeDef hrtc; //local instnace of RTC
 
 extern void rt_memory_info(rt_uint32_t *total, rt_uint32_t *used, rt_uint32_t *max_used);
 

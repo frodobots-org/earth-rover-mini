@@ -12,4 +12,8 @@
 - [Shopify](https://shop.frodobots.com/collections/earth-rovers/products/earth-rover-mini-plus)
   
 # Getting Started
-- [Software Development](https://github.com/frodobots-org/earth-rover-mini/tree/dev/Software)
+
+Core Development is done in two sections under Software
+- [Software Development](/Software)
+- [Host User Development](/Software/linux)
+- [Client Side(EarthRover Mini) Development](/Software/STM32/applications)
