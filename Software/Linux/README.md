@@ -72,8 +72,6 @@ The **motor control payload** is defined as follows:
 
 ## Getting Started: A Simple Teleop Example
 
-The following C code provides a basic example of how to send control commands from a Linux-based host computer:
+Look to `src/examples/move.cpp`
 
-```c
-// Example: Sending a UCP_MOTOR_CTL packet
-// (Implementation details go here)
+
