@@ -1,0 +1,6 @@
+{
+    "cmake.sourceDirectory": "C:/Users/Hasan/OneDrive/Desktop/earth-rover-mini-OpenSource/Software/Linux",
+    "files.associations": {
+        "rtthread.h": "c"
+    }
+}

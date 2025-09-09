@@ -467,7 +467,7 @@ uint8_t ws2812b_info(ws2812b_info_t *info)
     return 0;                                                       /* success return 0 */
 }
 
-//初始化
+//初始化 = Initialization
 uint8_t ws2812_init()
 {
     uint8_t res;
