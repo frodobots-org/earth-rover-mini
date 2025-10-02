@@ -16,9 +16,7 @@ make
 - Once the connection is established. Connect to your robot with adb
 ```bash
 adb connect 192.168.11.1
-adb push <your program> /tmp/
 adb shell
-/tmp/<your program>
 ```
 
 # Host Control Instructions
@@ -81,9 +79,14 @@ Look to `src/examples/move.cpp`
 Look to `src/Examples/sample_demo_dual_camera.c`
 #### Run the example code on the Earth Rover Mini
 - Build Examples
-- Push sample_demo_dual_camera to device via ADB
+- Push `sample_demo_dual_camera` to device via ADB
+```
+adb push sample_demo_dual_camera /tmp/
+```
 - Run example
-`/tmp/sample_demo_dual_camera -s 0 -W 1920 -H 1080 -w 720 -h 576 -f 30 -r 0 -s 1 -W 1920 -H 1080 -w 720 -h 576 -f 30 -r 0 -n 1 -b 1`4. 
+```
+adb shell /tmp/sample_demo_dual_camera -s 0 -W 1920 -H 1080 -w 720 -h 576 -f 30 -r 0 -s 1 -W 1920 -H 1080 -w 720 -h 576 -f 30 -r 0 -n 1 -b 1
+```
 #### Capture video from the Earth Rover Mini camera on the computer
 - Connect with Earth Rover Mini with same local network.
 - Use Python Opencv
