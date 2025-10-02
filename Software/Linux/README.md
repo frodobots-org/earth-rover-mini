@@ -2,11 +2,11 @@
 
 ## Build Example
 ```
+git clone --recursive https://github.com/frodobots-org/earth-rover-mini.git
 cd earth-rover-mini/Software/Linux
-git submodule update --init
 mkdir build
 cd build
-cmake ..
+cmake -DCMAKE_TOOLCHAIN_FILE=../toolchain.cmake ..
 make
 ```
 
@@ -16,9 +16,9 @@ make
 - Once the connection is established. Connect to your robot with adb
 ```bash
 adb connect 192.168.11.1
-adb push hello /data/
+adb push <your program> /tmp/
 adb shell
-./hello
+/tmp/<your program>
 ```
 
 # Host Control Instructions
@@ -74,4 +74,40 @@ The **motor control payload** is defined as follows:
 
 Look to `src/examples/move.cpp`
 
+# Camera Example
 
+## Getting Started: Dual Camera Streaming Over RTSP
+
+Look to `src/Examples/sample_demo_dual_camera.c`
+#### Run the example code on the Earth Rover Mini
+- Build Examples
+- Push sample_demo_dual_camera to device via ADB
+- Run example
+`/tmp/sample_demo_dual_camera -s 0 -W 1920 -H 1080 -w 720 -h 576 -f 30 -r 0 -s 1 -W 1920 -H 1080 -w 720 -h 576 -f 30 -r 0 -n 1 -b 1`4. 
+#### Capture video from the Earth Rover Mini camera on the computer
+- Connect with Earth Rover Mini with same local network.
+- Use Python Opencv
+```python
+import cv2
+'''
+rtsp://<Earth Rover Mini IP>/live/0  Front camera main-stream
+rtsp://<Earth Rover Mini IP>/live/1  Front camera sub-stream
+rtsp://<Earth Rover Mini IP>/live/2  Rear camera main-stream
+rtsp://<Earth Rover Mini IP>/live/3  Rear camera sub-stream
+'''
+cap = cv2.VideoCapture("rtsp://<Earth Rover Mini IP>/live/0")
+if not cap.isOpened():
+    print("Failed to open RTSP stream")
+    exit()
+while True:
+    ret, frame = cap.read()
+    if not ret:
+        print("Failed to read frame")
+        break
+    cv2.imshow("RTSP Stream", frame)
+    if cv2.waitKey(1) & 0xFF == ord("q"):
+        break
+
+cap.release()
+cv2.destroyAllWindows()
+```
