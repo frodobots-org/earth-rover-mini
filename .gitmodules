@@ -1,3 +1,3 @@
-[submodule "Software/Linux/toolchain"]
-	path = Software/Linux/toolchain
+[submodule "Software/Linux/toolchain/arm-rockchip830-linux-uclibcgnueabihf"]
+	path = Software/Linux/toolchain/arm-rockchip830-linux-uclibcgnueabihf
 	url = https://github.com/deerpi/arm-rockchip830-linux-uclibcgnueabihf.git
