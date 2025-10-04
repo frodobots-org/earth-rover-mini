@@ -2,7 +2,7 @@
 
 ## Build Example
 ```
-git clone --recursive https://github.com/frodobots-org/earth-rover-mini.git
+git clone --recursive https://github.com/SIGRobotics-UIUC/earth-rover-mini-OpenSource.git
 cd earth-rover-mini/Software/Linux
 mkdir build
 cd build
