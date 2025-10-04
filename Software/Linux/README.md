@@ -3,7 +3,7 @@
 ## Install and Setup the toolchain
 # Run this in the toolchain folder
 ```
-cd earth-rover-mini/Software/Linux/toolchain
+cd earth-rover-mini-OpenSource/Software/Linux/toolchain
 source ./env_install_toolchain.sh /opt/toolchain
 cd ..
 ```
