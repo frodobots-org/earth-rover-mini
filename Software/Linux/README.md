@@ -1,5 +1,18 @@
 # Earth Rover Mini+ Host Development
 
+## Install and Setup the toolchain
+# Run this in the toolchain folder
+```
+cd earth-rover-mini/Software/Linux/toolchain
+source ./env_install_toolchain.sh /opt/toolchain
+cd ..
+```
+# Verify the compiler is in your PATH
+```
+which arm-rockchip830-linux-uclibcgnueabihf-g++
+```
+- You should see output like this: 
+- /opt/toolchain/toolchain/bin/arm-rockchip830-linux-uclibcgnueabihf-g++
 ## Build Example
 ```
 git clone --recursive https://github.com/frodobots-org/earth-rover-mini.git
