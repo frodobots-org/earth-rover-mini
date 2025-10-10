@@ -160,7 +160,7 @@ int main(int argc, char* argv[]) {
   }
 
   // Prompt user, then move robot forward for ~3 seconds
-  printf("Press enter to move forward...\n");
+  printf("Press enter to move forward random text here lmao...\n");
   getchar();
   for (int i = 0; i < 30; i++) {
     send_ctl_cmd(fd, 60, 0);   // Speed = 60, Angular = 0

@@ -18,6 +18,7 @@ link_directories(
 )
 
 add_executable(move src/Examples/move.cpp)
+add_executable(tcp_bridge src/Examples/bridge.c)
 add_executable(sample_demo_dual_camera src/Examples/sample_demo_dual_camera.c)
 
 target_link_libraries(sample_demo_dual_camera
