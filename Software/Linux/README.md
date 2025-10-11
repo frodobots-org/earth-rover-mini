@@ -28,9 +28,9 @@ This section provides instructions on how to control the robot from a host compu
 
 ## TCP Control Mechanism Demo w/ Move
 
-The robot has been configured such that it is possible to send commands via TCP and Python. To do this, first navigate to the **/data** folder inside the robot shell and then run the **tcp_bridge** executable. This sets a TCP receiver connection on the robot side so it is ready to receive the packets sent from external code. You should see some sort of confirmation message that this worked.
+The robot has been configured such that it is possible to send commands via TCP and Python. To do this, first navigate to the **/data** folder inside the robot shell and then run the **tcp_bridge** executable by calling `./tcp_bridge`. This sets a TCP receiver connection on the robot side so it is ready to receive the packets sent from external code. You should see some sort of confirmation message that this worked.
 
-Next, go to the **/src/Examples** folder and run the **move.py** script. This is some basic code that mirrors **move.cpp** but instead in Python. You should see the rover move if you execute this part right. 
+Next, go to the **/src/Examples** folder and run the **move.py** script by running `python3 move.py`. This is some basic code that mirrors **move.cpp** but instead in Python. You should see the rover move if you execute this part right. 
 
 I'll now explain how some of this works internally. The script **uart_cp.py** was created as an API for the C structs defined in **ucp.h**. By translating the alignments and the types correctly, can call these Python classes in the same way the C structs were earlier. You can see that the two move files have very similar structure because of this. Another thing that's important is to ensure that the right IP address and port are being used, or else the communication between computer and robot will not happen. If you wish to change these values or you aren't happy with the way the robot handles the connection, you must modify the **bridge.c** file, cmake and make, and then **adb push** the resultant **tcp_bridge** executable into the right folder of the robot, and then run the executable again from the robot side.
 

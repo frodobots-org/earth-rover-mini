@@ -1,5 +1,5 @@
 import struct, socket, time
-from uart_cp import UcpCtlCmd, UCP_MOTOR_CTL
+from uart_cp import UcpCtlCmd, UCP_MOTOR_CTL, UCP_RPM_REPORT, UCP_STATE
 
 def crc16(data: bytes) -> int:
     crc_hi = 0xFF
@@ -63,23 +63,70 @@ def send_ctl_cmd(sock, speed, angular):
     sock.sendall(buf)
     # print(f"Sent packet (len={len(buf)}):", buf.hex())
 
+def send_ctl_cmd_mod(sock, speed, angular, command):
+    cmd = UcpCtlCmd()
+    cmd.hd.len = len(bytes(cmd))
+    cmd.hd.id = command
+    cmd.hd.index = 0
+    cmd.speed = speed
+    cmd.angular = angular
+
+    head = 0xfffd
+    payload = bytes(cmd)
+    buf = struct.pack("<H", head) + payload
+    crc = crc16(buf)
+    buf += struct.pack("<H", crc)
+
+    sock.sendall(buf)
+
+# =========================================================================
+# UART Command Protocol (UCP) Command Identifiers
+# Each command ID corresponds to a specific type of UART message.
+# ========================================================================= 
+#define UCP_KEEP_ALIVE              (0X1)   // Heartbeat: keep-alive message
+#define UCP_MOTOR_CTL               (0X2)   // Motor control command
+#define UCP_IMU_CORRECTION_START    (0X3)   // Start IMU calibration/correction
+#define UCP_IMU_CORRECTION_END      (0X4)   // End IMU calibration/correction
+#define UCP_RPM_REPORT              (0X5)   // RPM and sensor data report
+#define UCP_IMU_WRITE               (0X6)   // Write IMU calibration parameters
+#define UCP_MAG_WRITE               (0X7)   // Write magnetometer calibration parameters
+#define UCP_IMUMAG_READ             (0X8)   // Read IMU and magnetometer calibration values
+#define UCP_OTA                     (0X9)   // Over-the-Air update request
+#define UCP_STATE                   (0XA)   // Device state report
+
 def move_forward(sock, duration = 3.0):
     print('Moving forward ...')
     start = time.time()
     while time.time() - start < duration:
-        send_ctl_cmd(sock, 60, 0)
+        send_ctl_cmd_mod(sock, 100, 0, UCP_MOTOR_CTL)
         time.sleep(0.1)
     print('Stop')
-    send_ctl_cmd(sock, 0, 0)
+    send_ctl_cmd_mod(sock, 0, 0, UCP_MOTOR_CTL)
 
 def move_backward(sock, duration = 3.0):
     print('Moving backward ...')
     start = time.time()
     while time.time() - start < duration:
-        send_ctl_cmd(sock, -60, 0)
+        send_ctl_cmd_mod(sock, -100, 0, UCP_MOTOR_CTL)
         time.sleep(0.1)
     print('Stop')
-    send_ctl_cmd(sock, 0, 0)
+    send_ctl_cmd(sock, 0, 0, UCP_MOTOR_CTL)
+
+# doesn't work, not receiving report from robot?
+def get_data_report(sock):
+    send_ctl_cmd_mod(sock, 0, 0, UCP_RPM_REPORT)
+    report = sock.recv(1024)
+    with open("rpm_report.txt", "w") as f:
+        f.write(report.decode("utf-8"))
+    print("Wrote RPM report to rpm_report.txt")
+
+# doesn't work, not receiving report from robot?
+def get_state_report(sock):
+    send_ctl_cmd_mod(sock, 0, 0, UCP_STATE)
+    report = sock.recv(1024)
+    with open("state_report.txt", "w") as f:
+        f.write(report.decode("utf-8"))
+    print("Wrote device state report to state_report.txt")
 
 if __name__ == "__main__":
     rover_ip = "192.168.11.1"
@@ -93,6 +140,8 @@ if __name__ == "__main__":
         
         input("Press enter to move backward...")
         move_backward(sock)
+        # print("Getting data report...")
+        # get_data_report(sock)
 
     finally:
         sock.close()
