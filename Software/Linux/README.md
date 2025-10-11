@@ -19,6 +19,13 @@ adb connect 192.168.11.1:5555
 adb shell
 ```
 
+## Push files to Robot (Optional)
+- Once connected via ADB and before running shell, run the following to push a new tcp_bridge file (only if you have modified it) or any other file
+- After compiling **bridge.c**, **tcp_bridge** will be present in Software/Linux/build
+- cd into the build folder and run the following
+```bash
+adb push tcp_bridge /data/
+```
 
 # Host Control Instructions
 

@@ -115,7 +115,8 @@ def move_backward(sock, duration = 3.0):
 # doesn't work, not receiving report from robot?
 def get_data_report(sock):
     send_ctl_cmd_mod(sock, 0, 0, UCP_RPM_REPORT)
-    report = sock.recv(1024)
+    report = sock.recv(44)
+    print(report)
     with open("rpm_report.txt", "w") as f:
         f.write(report.decode("utf-8"))
     print("Wrote RPM report to rpm_report.txt")
@@ -123,7 +124,8 @@ def get_data_report(sock):
 # doesn't work, not receiving report from robot?
 def get_state_report(sock):
     send_ctl_cmd_mod(sock, 0, 0, UCP_STATE)
-    report = sock.recv(1024)
+    report = sock.recv(44)
+    print(report)
     with open("state_report.txt", "w") as f:
         f.write(report.decode("utf-8"))
     print("Wrote device state report to state_report.txt")

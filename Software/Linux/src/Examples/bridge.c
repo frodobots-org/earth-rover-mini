@@ -124,6 +124,24 @@ int main() {
         while ((n = recv(client_fd, buf, sizeof(buf), 0)) > 0) {
             write(uart_fd, buf, n);
             printf("[Bridge] Forwarded %zd bytes to serial.\n", n);
+
+             // Check if UART has data to read
+            fd_set readfds;
+            struct timeval tv;
+            FD_ZERO(&readfds);
+            FD_SET(uart_fd, &readfds);
+
+            tv.tv_sec = 0;
+            tv.tv_usec = 1000; // 1 ms timeout
+
+            int ret = select(uart_fd + 1, &readfds, NULL, NULL, &tv);
+            if (ret > 0 && FD_ISSET(uart_fd, &readfds)) {
+                ssize_t m = read(uart_fd, buf, sizeof(buf));
+                if (m > 0) {
+                    send(client_fd, buf, m, 0);
+                    printf("[Bridge] Forwarded %zd bytes from serial to TCP.\n", m);
+                }
+            }
         }
 
         printf("[Bridge] Client disconnected.\n");
