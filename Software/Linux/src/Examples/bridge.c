@@ -8,11 +8,13 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <sys/epoll.h>
 #include <signal.h>
 
 #define SERIAL_DEVICE "/dev/ttyS0"
 #define TCP_PORT 8888
 #define BUF_SIZE 1024
+#define MAX_EVENTS 2
 
 int uart_fd = -1;
 int server_fd = -1;
@@ -53,6 +55,10 @@ int setup_serial(const char *device) {
 
     tty.c_cflag |= (CLOCAL | CREAD);
     tty.c_cflag &= ~(PARENB | PARODD | CSTOPB | CRTSCTS);
+
+    tty.c_iflag &= ~(IXON | IXOFF | IXANY);
+    tty.c_cflag &= ~CRTSCTS;
+
 
     if (tcsetattr(fd, TCSANOW, &tty) != 0) {
         perror("tcsetattr");
@@ -103,51 +109,144 @@ int main() {
     uart_fd = setup_serial(SERIAL_DEVICE);
     if (uart_fd < 0) return 1;
 
+    int uart_flags = fcntl(uart_fd, F_GETFL, 0);
+    fcntl(uart_fd, F_SETFL, uart_flags | O_NONBLOCK);
+
     server_fd = setup_server(TCP_PORT);
     if (server_fd < 0) return 1;
+
+    // int server_flags = fcntl(server_fd, F_GETFL, 0);
+    // fcntl(server_fd, F_SETFL, server_flags | O_NONBLOCK);
+
 
     struct sockaddr_in client_addr;
     socklen_t client_len = sizeof(client_addr);
 
+    printf("[Bridge] Waiting for TCP client...\n");
+    client_fd = accept(server_fd, (struct sockaddr*)&client_addr, &client_len);
+    if (client_fd < 0) {
+        perror("accept");
+        cleanup(0);
+    }
+
+    printf("[Bridge] Client connected from %s:%d\n",
+           inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+
+    // Create epoll instance
+    int epfd = epoll_create1(0);
+    if (epfd < 0) {
+        perror("epoll_create1");
+        cleanup(0);
+    }
+
+    struct epoll_event ev, events[MAX_EVENTS];
+    ev.events = EPOLLIN;
+    ev.data.fd = client_fd;
+    epoll_ctl(epfd, EPOLL_CTL_ADD, client_fd, &ev);
+
+    ev.events = EPOLLIN;
+    ev.data.fd = uart_fd;
+    epoll_ctl(epfd, EPOLL_CTL_ADD, uart_fd, &ev);
+
+    uint8_t buf[BUF_SIZE];
     while (1) {
-        printf("[Bridge] Waiting for connection...\n");
-        client_fd = accept(server_fd, (struct sockaddr*)&client_addr, &client_len);
-        if (client_fd < 0) {
-            perror("accept");
-            continue;
+        int n_events = epoll_wait(epfd, events, MAX_EVENTS, -1);
+        if (n_events < 0) {
+            if (errno == EINTR) continue;
+            perror("epoll_wait");
+            break;
         }
-        printf("[Bridge] Client connected from %s:%d\n",
-               inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
 
-        uint8_t buf[BUF_SIZE];
-        ssize_t n;
-        while ((n = recv(client_fd, buf, sizeof(buf), 0)) > 0) {
-            write(uart_fd, buf, n);
-            printf("[Bridge] Forwarded %zd bytes to serial.\n", n);
+        for (int i = 0; i < n_events; i++) {
+            int fd = events[i].data.fd;
 
-             // Check if UART has data to read
-            fd_set readfds;
-            struct timeval tv;
-            FD_ZERO(&readfds);
-            FD_SET(uart_fd, &readfds);
+            if (events[i].events & (EPOLLHUP | EPOLLERR)) {
+                printf("[Bridge] EPOLL error or hangup on fd %d\n", fd);
+                goto cleanup_exit;
+            }
 
-            tv.tv_sec = 0;
-            tv.tv_usec = 1000; // 1 ms timeout
+            if (fd == client_fd) {
+                ssize_t n = recv(client_fd, buf, sizeof(buf), 0);
+                if (n <= 0) {
+                    printf("[Bridge] Client disconnected.\n");
+                    goto cleanup_exit;
+                }
+                write(uart_fd, buf, n);
+                printf("[Bridge] TCP → UART %zd bytes\n", n);
+            }
 
-            int ret = select(uart_fd + 1, &readfds, NULL, NULL, &tv);
-            if (ret > 0 && FD_ISSET(uart_fd, &readfds)) {
+            else if (fd == uart_fd) {
                 ssize_t m = read(uart_fd, buf, sizeof(buf));
                 if (m > 0) {
                     send(client_fd, buf, m, 0);
-                    printf("[Bridge] Forwarded %zd bytes from serial to TCP.\n", m);
+                    printf("[Bridge] UART → TCP %zd bytes\n", m);
                 }
             }
         }
-
-        printf("[Bridge] Client disconnected.\n");
-        close(client_fd);
     }
 
-    cleanup(0);
-    return 0;
+    cleanup_exit:
+        close(epfd);
+        if (client_fd > 0) close(client_fd);
+        if (server_fd > 0) close(server_fd);
+        if (uart_fd > 0) close(uart_fd);
+        printf("[Bridge] Clean exit.\n");
+        return 0;
+
 }
+
+// int main() {
+//     signal(SIGINT, cleanup);
+//     signal(SIGTERM, cleanup);
+
+//     uart_fd = setup_serial(SERIAL_DEVICE);
+//     if (uart_fd < 0) return 1;
+
+//     server_fd = setup_server(TCP_PORT);
+//     if (server_fd < 0) return 1;
+
+//     struct sockaddr_in client_addr;
+//     socklen_t client_len = sizeof(client_addr);
+
+//     while (1) {
+//         printf("[Bridge] Waiting for connection...\n");
+//         client_fd = accept(server_fd, (struct sockaddr*)&client_addr, &client_len);
+//         if (client_fd < 0) {
+//             perror("accept");
+//             continue;
+//         }
+//         printf("[Bridge] Client connected from %s:%d\n",
+//                inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+
+//         uint8_t buf[BUF_SIZE];
+//         ssize_t n;
+//         while ((n = recv(client_fd, buf, sizeof(buf), 0)) > 0) {
+//             write(uart_fd, buf, n);
+//             printf("[Bridge] Forwarded %zd bytes to serial.\n", n);
+
+//              // Check if UART has data to read
+//             fd_set readfds;
+//             struct timeval tv;
+//             FD_ZERO(&readfds);
+//             FD_SET(uart_fd, &readfds);
+
+//             tv.tv_sec = 0;
+//             tv.tv_usec = 1000; // 1 ms timeout
+
+//             int ret = select(uart_fd + 1, &readfds, NULL, NULL, &tv);
+//             if (ret > 0 && FD_ISSET(uart_fd, &readfds)) {
+//                 ssize_t m = read(uart_fd, buf, sizeof(buf));
+//                 if (m > 0) {
+//                     send(client_fd, buf, m, 0);
+//                     printf("[Bridge] Forwarded %zd bytes from serial to TCP.\n", m);
+//                 }
+//             }
+//         }
+
+//         printf("[Bridge] Client disconnected.\n");
+//         close(client_fd);
+//     }
+
+//     cleanup(0);
+//     return 0;
+// }
