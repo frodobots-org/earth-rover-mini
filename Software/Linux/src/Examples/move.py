@@ -67,7 +67,7 @@ def move_forward(sock, duration = 3.0):
     print('Moving forward ...')
     start = time.time()
     while time.time() - start < duration:
-        send_ctl_cmd(sock, 60, 0)
+        send_ctl_cmd(sock, 100, 0)
         time.sleep(0.1)
     print('Stop')
     send_ctl_cmd(sock, 0, 0)
@@ -76,7 +76,25 @@ def move_backward(sock, duration = 3.0):
     print('Moving backward ...')
     start = time.time()
     while time.time() - start < duration:
-        send_ctl_cmd(sock, -60, 0)
+        send_ctl_cmd(sock, -100, 0)
+        time.sleep(0.1)
+    print('Stop')
+    send_ctl_cmd(sock, 0, 0)
+
+def change_angle(sock, duration = 3.0):
+    print('Changing angle ...')
+    start = time.time()
+    while time.time() - start < duration:
+        send_ctl_cmd(sock, 60, 360)
+        time.sleep(0.1)
+    print('Stop')
+    send_ctl_cmd(sock, 0, 0)
+
+def robot_move(sock, duration=3.0, speed=60, angular=0):
+    print('Moving ...')
+    start = time.time()
+    while time.time() - start < duration:
+        send_ctl_cmd(sock, speed, angular)
         time.sleep(0.1)
     print('Stop')
     send_ctl_cmd(sock, 0, 0)
@@ -89,10 +107,13 @@ if __name__ == "__main__":
     
     try:
         input("Press enter to move forward...")
-        move_forward(sock)
+        move_forward(sock, duration=1.0)
         
-        input("Press enter to move backward...")
-        move_backward(sock)
+        # input("Press enter to move backward...")
+        # move_backward(sock)
+
+        # input("Press enter to change angle...")
+        # change_angle(sock)
 
     finally:
         sock.close()

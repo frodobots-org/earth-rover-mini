@@ -17,6 +17,9 @@ link_directories(
     toolchain/media/lib
 )
 
+message(STATUS "Project source dir is: ${PROJECT_SOURCE_DIR}")
+
+
 add_executable(move src/Examples/move.cpp)
 add_executable(tcp_bridge src/Examples/bridge.c)
 add_executable(sample_demo_dual_camera src/Examples/sample_demo_dual_camera.c)
