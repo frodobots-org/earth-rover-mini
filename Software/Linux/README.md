@@ -2,8 +2,8 @@
 
 ## Build Example
 ```
-git clone --recursive https://github.com/frodobots-org/earth-rover-mini.git
-cd earth-rover-mini/Software/Linux
+git clone --recursive https://github.com/SIGRobotics-UIUC/earth-rover-mini-OpenSource.git
+cd earth-rover-mini-OpenSource/Software/Linux
 mkdir build
 cd build
 cmake -DCMAKE_TOOLCHAIN_FILE=../toolchain.cmake ..
@@ -15,8 +15,16 @@ make
 - Search and connect the wireless network <b>frodobot_xxx</b>. The default password is <b>12345678</b>.
 - Once the connection is established. Connect to your robot with adb
 ```bash
-adb connect 192.168.11.1
+adb connect 192.168.11.1:5555
 adb shell
+```
+
+## Push files to Robot (Optional)
+- Once connected via ADB and before running shell, run the following to push a new tcp_bridge file (only if you have modified it) or any other file
+- After compiling **bridge.c**, **tcp_bridge** will be present in Software/Linux/build
+- cd into the build folder and run the following
+```bash
+adb push tcp_bridge /data/
 ```
 
 # Host Control Instructions
@@ -24,6 +32,17 @@ adb shell
 This section provides instructions on how to control the robot from a host computer for development and testing purposes.
 
 ---
+
+## TCP Control Mechanism Demo w/ Move
+
+The robot has been configured such that it is possible to send commands via TCP and Python. To do this, first navigate to the **/data** folder inside the robot shell and then run the **tcp_bridge** executable by calling `./tcp_bridge`. This sets a TCP receiver connection on the robot side so it is ready to receive the packets sent from external code. You should see some sort of confirmation message that this worked.
+
+Next, go to the **/src/Examples** folder and run the **move.py** script by running `python3 move.py`. This is some basic code that mirrors **move.cpp** but instead in Python. You should see the rover move if you execute this part right. 
+
+I'll now explain how some of this works internally. The script **uart_cp.py** was created as an API for the C structs defined in **ucp.h**. By translating the alignments and the types correctly, can call these Python classes in the same way the C structs were earlier. You can see that the two move files have very similar structure because of this. Another thing that's important is to ensure that the right IP address and port are being used, or else the communication between computer and robot will not happen. If you wish to change these values or you aren't happy with the way the robot handles the connection, you must modify the **bridge.c** file, cmake and make, and then **adb push** the resultant **tcp_bridge** executable into the right folder of the robot, and then run the executable again from the robot side.
+
+*Problems/Notes*
+This is all reliant on the IP address and port being constant, which makes it vulnerable to being hacked. Idk what to do about this.\nI tested this out on my dual-boot computer with x86 processors. Not sure how well this would work on ARM chip computers.
 
 ## Control Mechanism
 
