@@ -173,7 +173,7 @@ if __name__ == "__main__":
     sock = socket.create_connection((HOST, PORT))
     # sock.settimeout(0.5)
     sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-    print_time_delay = 0.1
+    print_time_delay = 0.00001
 
     stop_event = threading.Event()
     t = threading.Thread(target=reader_loop, args=(sock, stop_event, print_time_delay), daemon=True)
@@ -187,7 +187,7 @@ if __name__ == "__main__":
         # robot_move(sock, duration=3.0, speed=-100, angular=0)
 
         input("Press Enter to turn right...")
-        robot_move(sock, duration=1.0, speed=60, angular=360)
+        robot_move(sock, duration=3.0, speed=60, angular=360)
 
     finally:
         stop_event.set()
