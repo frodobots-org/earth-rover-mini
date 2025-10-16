@@ -107,13 +107,13 @@ if __name__ == "__main__":
     
     try:
         input("Press enter to move forward...")
-        move_forward(sock)
+        move_forward(sock, duration=1.0)
         
-        input("Press enter to move backward...")
-        move_backward(sock)
+        # input("Press enter to move backward...")
+        # move_backward(sock)
 
-        input("Press enter to change angle...")
-        change_angle(sock)
+        # input("Press enter to change angle...")
+        # change_angle(sock)
 
     finally:
         sock.close()
