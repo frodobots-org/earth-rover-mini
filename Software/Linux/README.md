@@ -107,29 +107,9 @@ adb push sample_demo_dual_camera /tmp/
 adb shell /tmp/sample_demo_dual_camera -s 0 -W 1920 -H 1080 -w 720 -h 576 -f 30 -r 0 -s 1 -W 1920 -H 1080 -w 720 -h 576 -f 30 -r 0 -n 1 -b 1
 ```
 #### Capture video from the Earth Rover Mini camera on the computer
-- Connect with Earth Rover Mini with same local network.
-- Use Python Opencv
-```python
-import cv2
-'''
-rtsp://<Earth Rover Mini IP>/live/0  Front camera main-stream
-rtsp://<Earth Rover Mini IP>/live/1  Front camera sub-stream
-rtsp://<Earth Rover Mini IP>/live/2  Rear camera main-stream
-rtsp://<Earth Rover Mini IP>/live/3  Rear camera sub-stream
-'''
-cap = cv2.VideoCapture("rtsp://<Earth Rover Mini IP>/live/0")
-if not cap.isOpened():
-    print("Failed to open RTSP stream")
-    exit()
-while True:
-    ret, frame = cap.read()
-    if not ret:
-        print("Failed to read frame")
-        break
-    cv2.imshow("RTSP Stream", frame)
-    if cv2.waitKey(1) & 0xFF == ord("q"):
-        break
-
-cap.release()
-cv2.destroyAllWindows()
+- go to the **/src/Examples** folder
+- run the camera script:
 ```
+python3 camera.py
+```
+This will open a window displaying the real-time video stream from the Earth Rover Mini’s onboard camera.
